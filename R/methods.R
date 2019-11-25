@@ -23,7 +23,7 @@ tst[1, "Maize.Wt.Change"] <- 0
 #AR Method
 detrend.fit <- gam(Maize.Wt.Change ~ s(Weather.Rain) + s(Weather.Radn) + 
                      s(Weather.MaxT) + s(Weather.MeanT) + s(Weather.MinT) +
-                     s(Weather.VPD) + s(yday), data = trn)
+                     s(Weather.VPD) + s(yday) + as.factor(year), data = trn)
 
 combo <- rbind(trn, tst)
 testing_index <- which(year(combo$Date) >= 2005 & year(combo$Date) < 2012)
@@ -81,7 +81,8 @@ for (i in seq(testing_index)) {
 
 #Total RMSE
 sqrt(mean((ar.forecast - tst$Maize.Wt.Change)^2))
-
+plot(ar.forecast %>% purrr::accumulate(`+`))
+lines(tst$Maize.AboveGround.Wt)
 
 #RF Method
 rforest <- randomForest::randomForest(data = trn,
@@ -89,11 +90,7 @@ rforest <- randomForest::randomForest(data = trn,
                                         Weather.MaxT + Weather.MeanT + Weather.MinT +
                                         Weather.VPD + yday)
 
-rf.forecast <- predict(rforest, tst)
-rf <- cbind(tst, rf.forecast)
-
-
-#Model residuals via online prediction method by updating AR model
+#Model residuals via online prediction method by updating RF model
 #with newly observed data after each iteration
 rf.forecast <- numeric(length(testing_index))
 harvested = FALSE
@@ -138,4 +135,57 @@ for (i in seq(nrow(tst))) {
 
 sqrt(mean((rf.forecast - tst$Maize.Wt.Change)^2))
 plot(rf.forecast %>% purrr::accumulate(`+`))
+lines(tst$Maize.AboveGround.Wt)
+
+#GBM Method
+gbm <- caret::train(data = trn,
+                    Maize.Wt.Change ~ Weather.Rain + Weather.Radn + 
+                      Weather.MaxT + Weather.MeanT + Weather.MinT +
+                      Weather.VPD + yday, method = "gbm")
+
+#Model residuals via online prediction method by updating GBM model
+#with newly observed data after each iteration
+gbm.forecast <- numeric(length(testing_index))
+harvested = FALSE
+year.tot = 0
+for (i in seq(nrow(tst))) {
+  
+  #Set default forecast value of 0
+  forecast <- 0
+  
+  #Get day of the year (May 5th is either 125 or 126)
+  dayofyear <- yday(tst$Date[i])
+  
+  #Has the seed been sown?
+  sowed = dayofyear >= 125
+  
+  #Reset the harvested boolean when the crop is sown
+  if(dayofyear == 125){
+    harvested = FALSE
+  }
+  
+  #If the crop is sown and not yet harvested
+  if(sowed && !harvested){
+    
+    #If the difference between the previous prediction and the next is more than 500,
+    #then the model has predicted that the crop was harvested, else predict
+    if(as.numeric(predict(gbm, tst[i,])) < -1){
+      #If crop was harvested, return Maize.AboveGround.Wt forecast of 0
+      harvested = TRUE
+      forecast = -1 * year.tot
+    } else {
+      #If the crop was not harvested, return the AR model online prediction
+      forecast <- as.numeric(predict(gbm, tst[i,]))
+      #Do not return a negative forecast
+      forecast <- max(0, forecast)
+    }
+  }
+  
+  #Update forecasts list
+  gbm.forecast[i] <- forecast
+  year.tot <- year.tot + forecast
+}
+
+sqrt(mean((gbm.forecast - tst$Maize.Wt.Change)^2))
+plot(gbm.forecast %>% purrr::accumulate(`+`))
 lines(tst$Maize.AboveGround.Wt)
