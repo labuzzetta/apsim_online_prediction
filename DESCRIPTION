@@ -1,4 +1,4 @@
-Package: apsim_online_prediction
+Package: ApsimOnline
 Title: Online Prediction for APSIM Next Generation
 Version: 1.0.0
 Authors@R: person("Charlie", "Labuzzetta", email = "clabuzze@iastate.edu", role = c("aut", "cre"))
@@ -8,7 +8,7 @@ Depends:
 License: GPL-3
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 5.0.1
+RoxygenNote: 7.0.1
 VignetteBuilder: knitr
 Suggests: knitr,
     rmarkdown, apsimx
