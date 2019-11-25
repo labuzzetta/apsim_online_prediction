@@ -6,11 +6,11 @@ simulation <- apsimx(file = "special_project_model.apsimx",
               silent = TRUE, value = 'report', cleanup = TRUE)
 
 #Partition datasets (keep secret unused until final evaluation at end of the semester)
-training <- report %>% filter(year(Date) < 2005) %>%
+training <- simulation %>% filter(year(Date) < 2005) %>%
   mutate(year = year(Date), yday = yday(Date))
-testing <- report %>% filter(year(Date) >= 2005 & year(Date) < 2012) %>%
+testing <- simulation %>% filter(year(Date) >= 2005 & year(Date) < 2012) %>%
   mutate(year = year(Date), yday = yday(Date))
-secret <- report %>% filter(year(Date) >= 2012) %>%
+secret <- simulation %>% filter(year(Date) >= 2012) %>%
   mutate(year = year(Date), yday = yday(Date))
 
 #Save RData to the data directory
