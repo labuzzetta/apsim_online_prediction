@@ -9,6 +9,15 @@ library(mgcv)
 data("training")
 data("testing")
 
-methods <- rbind(training, testing) %>%
-  arrange(Date) %>% 
+#Add daily biomass change variable - training
+trn <- training %>% arrange(Date) %>%
   mutate(Maize.Wt.Change = Maize.AboveGround.Wt - lag(Maize.AboveGround.Wt))
+trn[1, "Maize.Wt.Change"] <- 0
+
+#Add daily biomass change variable - testing
+tst <- testing %>% arrange(Date) %>%
+  mutate(Maize.Wt.Change = Maize.AboveGround.Wt - lag(Maize.AboveGround.Wt))
+tst[1, "Maize.Wt.Change"] <- 0
+
+
+
