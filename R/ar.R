@@ -4,5 +4,3 @@ library(ggplot2)
 library(lubridate)
 library(dplyr)
 library(mgcv)
-
-test <- NULL
