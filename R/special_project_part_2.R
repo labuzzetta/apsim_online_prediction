@@ -5,7 +5,8 @@ library(lubridate)
 library(dplyr)
 library(mgcv)
 
-report <- apsimo::simulation
+data("simulation")
+report <- simulation
 
 #Training Data Yield Figure
 ggplot(data = report %>%
