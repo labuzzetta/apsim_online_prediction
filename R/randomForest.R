@@ -53,7 +53,7 @@ for (i in seq(nrow(tst))) {
   #If the crop is sown and not yet harvested
   if(sowed && !harvested){
     
-    new_rf <-  randomForest::randomForest(data = combo[testing_index[i-10]:testing_index[i-1],],
+    new_rf <- randomForest::randomForest(data = combo[testing_index[i-30]:testing_index[i-1],],
                                           Maize.Wt.Change ~ Weather.Rain + Weather.Radn + 
                                             Weather.MaxT + Weather.MeanT + Weather.MinT +
                                             Weather.VPD + yday + year)
