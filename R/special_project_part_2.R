@@ -40,9 +40,9 @@ report <- rbind(training, testing)
 
 #Adapted from https://rdrr.io/cran/opera/man/opera-package.html#heading-3
 #Fit gam model with relevant explanatory variables
-detrend.fit <- gam(Maize.AboveGround.Wt ~ s(Weather.Rain) + s(Weather.Radn) + 
-                     s(Weather.MaxT) + s(Weather.MeanT) + s(Weather.MinT) +
-                     s(Weather.VPD) + s(yday), data = training)
+detrend.fit <- gam(Maize.AboveGround.Wt ~ Weather.Rain + Weather.Radn + 
+                   Weather.MaxT + Weather.MeanT + Weather.MinT +
+                   Weather.VPD + s(yday), data = training)
 
 #Use model to make generalized prediction on future meteorological variables
 report$Trend <- c(predict(detrend.fit), predict(detrend.fit,newdata = testing))
