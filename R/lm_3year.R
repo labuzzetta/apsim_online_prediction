@@ -23,15 +23,9 @@ tst[1, "Maize.Wt.Change"] <- 0
 combo <- rbind(trn, tst)
 testing_index <- which(year(combo$Date) >= 2005 & year(combo$Date) < 2012)
 
-#RF Method
-#rforest <- randomForest::randomForest(data = trn,
-#                                      Maize.Wt.Change ~ Weather.Rain + Weather.Radn + 
-#                                        Weather.MaxT + Weather.MeanT + Weather.MinT +
-#                                        Weather.VPD + yday + year)
-
-#Model residuals via online prediction method by updating RF model
+#Model residuals via online prediction method by updating LM model
 #with newly observed data after each iteration
-rf.forecast <- numeric(length(testing_index))
+lm.forecast <- numeric(length(testing_index))
 harvested = FALSE
 year.tot = 0
 for (i in seq(nrow(tst))) {
@@ -53,32 +47,31 @@ for (i in seq(nrow(tst))) {
   #If the crop is sown and not yet harvested
   if(sowed && !harvested){
     
-    new_rf <- lm(data = combo[c((testing_index[i-30]-2*365):(testing_index[i-1]-2*365),
+    new_lm <- lm(data = combo[c((testing_index[i-30]-2*365):(testing_index[i-1]-2*365),
                                 (testing_index[i-30]-365):(testing_index[i-1]-365),
                                  testing_index[i-30]:testing_index[i-1]),],
                  Maize.Wt.Change ~ Weather.Rain + Weather.Radn + 
                    Weather.MaxT + Weather.MeanT + Weather.MinT +
                    Weather.VPD + yday + year)
     
-    #If the difference between the previous prediction and the next is more than 500,
-    #then the model has predicted that the crop was harvested, else predict
-    if(as.numeric(predict(new_rf, tst[i,])) < -50){
+    #If the change in biomass prediction is less than -50 then crop was harvested
+    if(as.numeric(predict(new_lm, tst[i,])) < -50){
       #If crop was harvested, return Maize.AboveGround.Wt forecast of 0
       harvested = TRUE
       forecast = -1 * year.tot
     } else {
-      #If the crop was not harvested, return the AR model online prediction
-      forecast <- as.numeric(predict(new_rf, tst[i,]))
+      #If the crop was not harvested, return the LM model online prediction
+      forecast <- as.numeric(predict(new_lm, tst[i,]))
       #Do not return a negative forecast
       forecast <- max(0, forecast)
     }
   }
   
   #Update forecasts list
-  rf.forecast[i] <- forecast
+  lm.forecast[i] <- forecast
   year.tot <- year.tot + forecast
 }
 
-sqrt(mean((rf.forecast - tst$Maize.Wt.Change)^2))
-plot(rf.forecast %>% purrr::accumulate(`+`))
+sqrt(mean((lm.forecast - tst$Maize.Wt.Change)^2))
+plot(lm.forecast %>% purrr::accumulate(`+`))
 lines(tst$Maize.AboveGround.Wt)
