@@ -58,14 +58,13 @@ for (i in seq(nrow(tst))) {
                                             Weather.MaxT + Weather.MeanT + Weather.MinT +
                                             Weather.VPD + yday + year)
     
-    #If the difference between the previous prediction and the next is more than 500,
-    #then the model has predicted that the crop was harvested, else predict
+    #If the change in biomass prediction is less than -50 then crop was harvested
     if(as.numeric(predict(new_rf, tst[i,])) < -50){
       #If crop was harvested, return Maize.AboveGround.Wt forecast of 0
       harvested = TRUE
       forecast = -1 * year.tot
     } else {
-      #If the crop was not harvested, return the AR model online prediction
+      #If the crop was not harvested, return the RF model online prediction
       forecast <- as.numeric(predict(new_rf, tst[i,]))
       #Do not return a negative forecast
       forecast <- max(0, forecast)
