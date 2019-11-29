@@ -58,7 +58,7 @@ for (i in seq(nrow(tst))) {
       harvested = TRUE
       forecast = -1 * year.tot
     } else {
-      #If the crop was not harvested, return the AR model online prediction
+      #If the crop was not harvested, return the GAM model online prediction
       forecast <- as.numeric(predict(new_gam, tst[i,]))
       #Do not return a negative forecast
       forecast <- max(0, forecast)
