@@ -75,9 +75,10 @@ for (i in seq(testing_index)) {
   #If the crop is sown and not yet harvested
   if(sowed && !harvested){
     
-    #If the difference between the previous prediction and the next is more than 500,
-    #then the model has predicted that the crop was harvested, else predict
-    if(abs(ar.forecast[i-1] - (as.numeric(predict(ar.fit)$pred) + report$Trend[testing_index[i]])) > 500){
+    #If the previous APSIM output says the corn is ripe, then harvest
+    #This will allow for better comparison between the methods in terms of RMSE
+    #And none of the methods I have used predict harvesting well.
+    if(tst[i-1,]$Maize.Phenology.CurrentStageName == "HarvestRipe"){
       #If crop was harvested, return Maize.AboveGround.Wt forecast of 0
       harvested = TRUE
     } else {

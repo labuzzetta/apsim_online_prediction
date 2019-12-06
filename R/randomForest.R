@@ -58,8 +58,10 @@ for (i in seq(nrow(tst))) {
                                             Weather.MaxT + Weather.MeanT + Weather.MinT +
                                             Weather.VPD + yday + year)
     
-    #If the change in biomass prediction is less than -50 then crop was harvested
-    if(as.numeric(predict(new_rf, tst[i,])) < -50){
+    #If the previous APSIM output says the corn is ripe, then harvest
+    #This will allow for better comparison between the methods in terms of RMSE
+    #And none of the methods I have used predict harvesting well.
+    if(tst[i-1,]$Maize.Phenology.CurrentStageName == "HarvestRipe"){
       #If crop was harvested, return Maize.AboveGround.Wt forecast of 0
       harvested = TRUE
       forecast = -1 * year.tot
