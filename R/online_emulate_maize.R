@@ -1,5 +1,5 @@
-online_emulate_maize <- function(train, test, pred_var, pred_type, method){
-  
+online_emulate_maize <- function(train, test, pred_var, pred_type, method, local_dist = 30){
+
   #Load required libraries
   library(apsimx)
   library(ggplot2)
@@ -7,10 +7,12 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method){
   library(dplyr)
   library(mgcv)
   library(tidyr)
+  library(caret)
   
   #List of required variables for online prediction
   required <- c("Weather.Rain", "Weather.Radn", "Weather.MaxT", "Weather.MeanT", 
-                "Weather.MinT", "Weather.VPD", "Date", "Maize.Phenology.CurrentStageName")
+                "Weather.MinT", "Weather.VPD", "Date", "yday", "year",
+                "Maize.Phenology.CurrentStageName")
   
   #Check training and testing data.frames for required variables
   if(!all(required %in% colnames(train))) stop("Check required column names in training data")
@@ -44,6 +46,37 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method){
   combo <- rbind(trn, tst)
   testing_index <- seq(nrow(train)+1, nrow(train)+nrow(test))
   
+  model <- NULL
+  
+  independent <- c("Weather.Rain","Weather.Radn","Weather.MaxT","Weather.MeanT","Weather.MinT","Weather.VPD","yday","year")
+  
+  if(method == "ar"){
+    detrend.fit <- gam(data = combo[seq(1,nrow(train)),],
+                       as.formula(paste(pred_var," ~ ","Weather.Rain + Weather.Radn + Weather.MaxT + Weather.MeanT + Weather.MinT + Weather.VPD + s(yday) + year")))
+    #Use model to make generalized prediction on future meteorological variables
+    combo$Trend <- c(predict(detrend.fit), predict(detrend.fit, newdata = test))
+    #Detrend the predictions, essentially calculating residuals
+    combo$detrend <- combo[[pred_var]] - combo$Trend
+  }
+  
+  if(pred_type == "no_update"){
+    if(method == "rf"){
+      model <- randomForest::randomForest(data = combo[seq(1,nrow(train)),],
+                                          as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
+    } else if(method == "nnet"){
+      model <- caret::train(data = combo[seq(1,nrow(train)),], method = "nnet", linout = 1,
+                            as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
+    } else if(method == "gam"){
+      model <- gam(data = combo[seq(1,nrow(train)),],
+                            as.formula(paste(pred_var," ~ ","Weather.Rain + Weather.Radn + Weather.MaxT + Weather.MeanT + Weather.MinT + Weather.VPD + s(yday) + year")))
+    } else if(method == "lm"){
+      model <- lm(data = combo[seq(1,nrow(train)),],
+                   as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
+    } else {
+      model <- ar(combo$detrend[seq(1,nrow(train))])
+    }
+  }
+  
   #Model residuals via online prediction method dependent on 
   #pred_type and method selectionse
   forecasts <- numeric(length(test))
@@ -64,18 +97,29 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method){
     }
     
     #Reset the harvested boolean when the crop is sown
-    if(dayofyear == 125){
+    if(test$Maize.Phenology.CurrentStageName[i] == "Sowing"){
       harvested = FALSE
     }
     
     #If the crop is sown and not yet harvested
     if(sowed && !harvested){
+        
+      tmp <- c("rf", "nnet", "ar", "gam", "lm")
       
-      new_rf <- randomForest::randomForest(data = combo[testing_index[i-30]:testing_index[i-1],],
-                                           Maize.Wt.Change ~ Weather.Rain + Weather.Radn + 
-                                             Weather.MaxT + Weather.MeanT + Weather.MinT +
-                                             Weather.VPD + yday + year)
-      
+      training_indicies <- c()
+      if(pred_type %in% c("online_total_full", "online_change_full")){
+        training_indicies <- seq(1,testing_index[i-1])
+      } else if(pred_type %in% c("online_total_local", "online_change_local")){
+        training_indicies <- seq(testing_index[i-local_dist],testing_index[i-1])
+      } else {
+        training_indicies <- seq(1,nrow(train))
+      }
+  
+      if(method == "rf" & (pred_type != "no_update")){
+        model <- randomForest::randomForest(data = combo[training_indicies,],
+                                            as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
+      }
+        
       #If the previous APSIM output says the corn is ripe, then harvest
       #This will allow for better comparison between the methods in terms of RMSE
       #And none of the methods I have used predict harvesting well.
@@ -86,7 +130,11 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method){
         forecast = -1 * year.tot
       } else {
         #If the crop was not harvested, return the RF model online prediction
-        forecast <- as.numeric(predict(new_rf, test[i,]))
+        if(method != "ar"){
+          forecast <- as.numeric(predict(model, test[i,]))
+        } else {
+          forecast <- as.numeric(predict(model)$pred) + combo$Trend[testing_index[i]]
+        }
         #Do not return a negative forecast
         forecast <- max(0, forecast)
       }
