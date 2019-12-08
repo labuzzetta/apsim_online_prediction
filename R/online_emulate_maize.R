@@ -138,7 +138,11 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
         #If crop was harvested, return Maize.AboveGround.Wt forecast of 0
         harvested = TRUE
         sowed = FALSE
-        forecast = -1 * year.tot
+        if(pred_type %in% c("online_change_full", "online_change_local")){
+          forecast = -1 * year.tot
+        } else {
+          forecast = 0
+        }
       } else {
         #If the crop was not harvested, return the RF model online prediction
         if(method != "ar"){
@@ -153,8 +157,12 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
     
     #Update forecasts list
     forecasts[i] <- forecast
-    year.tot <- year.tot + forecast
+    if(pred_type %in% c("online_change_full", "online_change_local")){
+      year.tot <- year.tot + forecast
+    }
+    
   }
   
   return(forecasts)
+  
 }
