@@ -118,8 +118,19 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
       if(method == "rf" & (pred_type != "no_update")){
         model <- randomForest::randomForest(data = combo[training_indicies,],
                                             as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
+      } else if(method == "nnet" & (pred_type != "no_update")){
+        model <- caret::train(data = combo[training_indicies,], method = "nnet", linout = 1,
+                              as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))      
+      } else if(method == "gam"){
+        model <- gam(data = combo[training_indicies,],
+                     as.formula(paste(pred_var," ~ ","Weather.Rain + Weather.Radn + Weather.MaxT + Weather.MeanT + Weather.MinT + Weather.VPD + s(yday) + year")))
+      } else if(method == "lm"){
+        model <- lm(data = combo[training_indicies,],
+                    as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
+      } else {
+        model <- ar(combo$detrend[training_indicies])
       }
-        
+      
       #If the previous APSIM output says the corn is ripe, then harvest
       #This will allow for better comparison between the methods in terms of RMSE
       #And none of the methods I have used predict harvesting well.
