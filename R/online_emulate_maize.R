@@ -30,20 +30,22 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
   
   #Edit the variable type to reflect daily change 
   #for online_change prediction type
-  if(pred_type == "online_change"){
+  if(pred_type %in% c("online_change_full", "online_change_local")){
     #Add daily change variable in train data
     train <- train %>% arrange(Date) %>%
-      mutate(Change = pred_var - lag(pred_var))
+      mutate(Change = .data[[pred_var]] - lag(.data[[pred_var]]))
     train[1, "Change"] <- 0
     
     #Add daily change variable in test data
     test <- test %>% arrange(Date) %>%
-      mutate(Change = pred_var - lag(pred_var))
+      mutate(Change = .data[[pred_var]] - lag(.data[[pred_var]]))
     test[1, "Change"] <- 0
+    
+    pred_var <- "Change"
   }
   
   #Assumes testing data comes after training data
-  combo <- rbind(trn, tst)
+  combo <- rbind(train, test)
   testing_index <- seq(nrow(train)+1, nrow(train)+nrow(test))
   
   model <- NULL
