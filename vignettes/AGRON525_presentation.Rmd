@@ -1,0 +1,113 @@
+---
+title: 'APSIM Online Prediction'
+author: "Charlie Labuzzetta"
+date: "12/9/2019"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(dpi=100, out.width="700px", out.height="500px")
+library(apsimx)
+library(ggplot2)
+library(lubridate)
+library(dplyr)
+library(mgcv)
+library(tidyr)
+library(caret)
+library(ggplot2)
+library(apsimo)
+library(gganimate)
+source("../R/online_emulate_maize.R")
+```
+
+## Computer model emulation
+
+Statistical models can be used to emulate (approximate) complex computer models, such as APSIM.
+
+- Simplify computer model via Random Forests, Neural Networks, Generalized Additive Models
+- Run more efficiently in repetition
+- Reduce computation for sensitivity analysis and large spatial scales
+
+
+## What is online prediction?
+
+Predict the $i^{th}$ observation by modeling the previous $i-1$ observations, then update the model and predict the $(i+1)^{th}$ observation.
+
+## What is online prediction?
+
+```{r, echo=F, fig.align = 'center', out.width="700px", out.height="500px"}
+#Load datasets from package
+data("training")
+data("testing")
+
+ggplot(data = testing %>% filter(year == 2005)) +
+  geom_line(aes(x=Date, y=Maize.AboveGround.Wt)) + 
+  geom_line(aes(x=Date, y=online_emulate_maize(training, testing %>% filter(year == 2005), pred_var = "Maize.AboveGround.Wt", method = "ar", pred_type = "online_total_local")), col = "red", linetype = "dashed") #+
+  #transition_reveal(yday)
+```
+
+## Why study online prediction for APSIM?
+
+It may seem silly to predict the next observation using a statistical model when we are only running a single APSIM simulation...
+
+But, online prediction can be seen as a first step toward full emulation of APSIM.
+
+1. Accurate online prediction knowing the next day's weather
+2. Online prediction without knowing the next day's weather (imputed or naive)
+3. Predict next week or month of APSIM output
+4. Fully predict APSIM output using a statistical model (emulation)
+5. Use APSIM emulator to run large-scale simulations more efficiently than APSIM
+
+## How does this connect to my research?
+
+I work for the **National Resources Inventory**, which conducts land-use / erosion monitoring through complex geographical survey techniques over all non-Federal lands in the United States. 
+
+```{r, out.width="300px", out.height="300px", fig.align='center', echo = F}
+  knitr::include_graphics("/Users/labuzzetta/Downloads/NRI.png")
+```
+
+## APSIM Setup
+
+I used a **simple** APSIM simulation, as learning the basics of APSIM was one of my goals for this project. 
+
+- 35 year simulation of continous corn on a field in central Iowa
+- **Fertiliser**: 150 kg/ha of UreaN applied annually at sowing
+- **Sowing**: Maize crop was sown at a fixed date, May 5, of each year at a depth of 50 mm, with 760 mm between rows and 8 plants per square meter. The maize cultivar GH\_5019WX was selected
+- **Harvesting**: The crop was automatically harvested when APSIM phenology stage reached 'ReadyForHarvesting'
+- **SurfaceOrganicMatter**: An initial soybean residual pool of 1250 kg/ha with a 27 g/g C/N ratio was assumed present on the field
+- **Maize**: The GH\_5019WX cultivar was applied to the field.
+
+## Simulation --> R
+
+Covariates:
+
+```{r}
+data("simulation")
+print(colnames(simulation[c(5:11,22)]))
+```
+
+## Simulation --> R
+
+Outputs:
+
+```{r}
+data("simulation")
+print(colnames(simulation[c(12:21)]))
+```
+
+## Algorithm
+
+1. Has the crop been sowed?
+2. If YES:
+  a. 
+
+## Trial 1
+
+How well does online prediction of Maize.AboveGround.Wt perform using a linear model?
+
+```{r, echo=F}
+data("testing")
+data("training")
+
+```
+
