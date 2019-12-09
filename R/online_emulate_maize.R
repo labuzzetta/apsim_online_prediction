@@ -123,13 +123,13 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
       } else if(method == "nnet" & (pred_type != "no_update")){
         model <- caret::train(data = combo[training_indicies,], method = "nnet", linout = 1,
                               as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))      
-      } else if(method == "gam"){
+      } else if(method == "gam" & (pred_type != "no_update")){
         model <- gam(data = combo[training_indicies,],
                      as.formula(paste(pred_var," ~ ","Weather.Rain + Weather.Radn + Weather.MaxT + Weather.MeanT + Weather.MinT + Weather.VPD + s(yday) + year")))
-      } else if(method == "lm"){
+      } else if(method == "lm" & (pred_type != "no_update")){
         model <- lm(data = combo[training_indicies,],
                     as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
-      } else {
+      } else if(method == "ar" & (pred_type != "no_update")){
         model <- ar(combo$detrend[training_indicies])
       }
       
