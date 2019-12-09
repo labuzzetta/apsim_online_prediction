@@ -17,7 +17,6 @@ library(caret)
 library(ggplot2)
 library(apsimo)
 library(gganimate)
-source("../R/online_emulate_maize.R")
 ```
 
 ## Computer model emulation
