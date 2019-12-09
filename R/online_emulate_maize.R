@@ -137,7 +137,7 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
       #If the previous APSIM output says the corn is ripe, then harvest
       #This will allow for better comparison between the methods in terms of RMSE
       #And none of the methods I have used predict harvesting well.
-      if(test[i-1,]$Maize.Phenology.CurrentStageName == "HarvestRipe"){
+      if(test[i-1,]$Maize.Phenology.CurrentStageName == "Ripe"){
         #If crop was harvested, return Maize.AboveGround.Wt forecast of 0
         harvested = TRUE
         sowed = FALSE
