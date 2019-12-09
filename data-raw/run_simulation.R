@@ -12,6 +12,17 @@ testing <- simulation %>% filter(year(Date) >= 2005 & year(Date) < 2012) %>%
   mutate(year = year(Date), yday = yday(Date))
 secret <- simulation %>% filter(year(Date) >= 2012) %>%
   mutate(year = year(Date), yday = yday(Date))
+simulation <- simulation %>% mutate(year = year(Date), yday = yday(Date))
+
+simulation[which(simulation$Maize.Phenology.CurrentStageName == ""),]$Maize.Phenology.CurrentStageName <- NA;
+simulation[which(simulation$Maize.Phenology.CurrentStageName == "HarvestRipe"),]$Maize.Phenology.CurrentStageName <- "Ripe"
+simulation[which(simulation$Maize.Phenology.CurrentStageName == "Ripe")+1,]$Maize.Phenology.CurrentStageName <- "Harvest"
+simulation[which(simulation$yday == 1),]$Maize.Phenology.CurrentStageName <- "StartYear"; 
+simulation <- simulation %>% tidyr::fill("Maize.Phenology.CurrentStageName")
+
+simulation$growing <- dplyr::if_else(condition = simulation$Maize.Phenology.CurrentStageName != "StartYear" &
+                                       simulation$Maize.Phenology.CurrentStageName != "Harvest", 
+                                     1, 0)
 
 #Save RData to the data directory
 usethis::use_data(simulation, overwrite=TRUE)
