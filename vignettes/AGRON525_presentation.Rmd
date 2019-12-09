@@ -95,6 +95,38 @@ data("simulation")
 print(colnames(simulation[c(12:21)]))
 ```
 
+## Training Data
+
+```{r, echo = F}
+data("simulation")
+report <- simulation
+
+#Training Data Yield Figure
+ggplot(data = report %>%
+         filter(year(Date) < 2005) %>%
+         mutate(Year = as.factor(lubridate::year(Date)),
+                `Above Ground Biomass (g/m^2)` = Maize.AboveGround.Wt,
+                `Day of Year` = lubridate::yday(Date)),
+       aes(x = `Day of Year`, y = `Above Ground Biomass (g/m^2)`, col = Year)) + 
+  geom_line()
+```
+
+## Testing Data
+
+```{r, echo = F}
+data("simulation")
+report <- simulation
+
+#Testing and Validation Data Yield Figure
+ggplot(data = report %>%
+         filter(year(Date) >= 2005) %>%
+         mutate(Year = as.factor(lubridate::year(Date)),
+                `Above Ground Biomass (g/m^2)` = Maize.AboveGround.Wt,
+                `Day of Year` = lubridate::yday(Date)),
+       aes(x = `Day of Year`, y = `Above Ground Biomass (g/m^2)`, col = Year)) + 
+  geom_line()
+```
+
 ## Algorithm
 
 1. Has the crop been sowed?
