@@ -34,15 +34,15 @@ Predict the $i^{th}$ observation by modeling the previous $i-1$ observations, th
 
 ## What is online prediction?
 
-```{r, echo=F, fig.align = 'center', out.width="700px", out.height="500px"}
+```{r, echo=F, fig.align = 'center', out.width="700px", out.height="500px", cache=T}
 #Load datasets from package
 data("training")
 data("testing")
 
-ggplot(data = testing %>% filter(year == 2005)) +
-  geom_line(aes(x=Date, y=Maize.AboveGround.Wt)) + 
-  geom_line(aes(x=Date, y=online_emulate_maize(training, testing %>% filter(year == 2005), pred_var = "Maize.AboveGround.Wt", method = "ar", pred_type = "online_total_local")), col = "red", linetype = "dashed") #+
-  #transition_reveal(yday)
+ggplot(data = (testing %>% filter(year == 2005))[120:275,]) +
+    geom_line(aes(x=Date, y=Maize.AboveGround.Wt)) + 
+    geom_line(aes(x=Date, y=online_emulate_maize(training, testing %>% filter(year == 2005), pred_var = "Maize.AboveGround.Wt", method = "ar", pred_type = "online_total_local")[120:275]), col = "red", linetype = "dashed") +
+  transition_reveal(yday)
 ```
 
 ## Why study online prediction for APSIM?
@@ -61,7 +61,7 @@ But, online prediction can be seen as a first step toward full emulation of APSI
 
 I work for the **National Resources Inventory**, which conducts land-use / erosion monitoring through complex geographical survey techniques over all non-Federal lands in the United States. 
 
-```{r, out.width="300px", out.height="300px", fig.align='center', echo = F}
+```{r, out.width="300px", out.height="300px", fig.align='center', echo = F, cache=T}
   knitr::include_graphics("/Users/labuzzetta/Downloads/NRI.png")
 ```
 
@@ -96,7 +96,7 @@ print(colnames(simulation[c(12:21)]))
 
 ## Training Data
 
-```{r, echo = F}
+```{r, echo = F, cache=T}
 data("simulation")
 report <- simulation
 
@@ -112,7 +112,7 @@ ggplot(data = report %>%
 
 ## Testing Data
 
-```{r, echo = F}
+```{r, echo = F, warning=F, cache=T}
 data("simulation")
 report <- simulation
 
@@ -128,17 +128,139 @@ ggplot(data = report %>%
 
 ## Algorithm
 
-1. Has the crop been sowed?
-2. If YES:
-  a. 
+1. Has the crop been sowed? then continue (Else predict 0)
+2. Is the crop still growing? then continue (Else predict 0)
+3. Update model on $i-1$ observations
+4. Is the crop ripe? then harvest and predict 0
+5. If crop is not ripe, predict the $i^{th}$ observation using model
+6. Retrieve the true observation for $i$
 
-## Trial 1
+## Trial 1 - Linear Model (LM)
 
-How well does online prediction of Maize.AboveGround.Wt perform using a linear model?
-
-```{r, echo=F}
+```{r, echo=F, warning = F, out.width="700px", out.height="500px", cache=T}
 data("testing")
 data("training")
-
+trial1 <- apsimo::online_emulate_maize(training, testing, pred_var = "Maize.AboveGround.Wt", pred_type = "online_total_full", method = "lm")
+ggplot(data = testing) +
+  geom_line(aes(x=Date, y=trial1), col = "red", linetype = "dashed") + geom_line(aes(x=Date, y=Maize.AboveGround.Wt))
 ```
 
+## Linear Model Assumptions
+
+1. Independence between observations 
+2. Normally distributed residuals
+3. Constant variance
+4. Mean of responses are linear combination of covariates
+
+Definitely violate the independence assumption... why?
+
+The residuals here are also ugly.
+
+## Trial 2 - LM on daily change
+
+```{r, echo=F, out.width="700px", out.height="500px", warning=F, cache=T}
+data("testing")
+data("training")
+trial2 <- apsimo::online_emulate_maize(training, testing, pred_var = "Maize.AboveGround.Wt", pred_type = "online_change_full", method = "lm")
+ggplot(data = testing) +
+  geom_line(aes(x=Date, y=Maize.AboveGround.Wt)) +
+  geom_line(aes(x=Date, y=trial2 %>% purrr::accumulate(`+`)), col = "red", linetype = "dashed")
+```
+
+## Trial 3 - Autoregressive Model
+
+```{r, echo = F, out.width="700px", out.height="500px", cache=T}
+data("testing")
+data("training")
+trial3 <- apsimo::online_emulate_maize(training, testing, pred_var = "Maize.AboveGround.Wt", pred_type = "online_total_full", method = "ar")
+ggplot(data = testing) +
+  geom_line(aes(x=Date, y=Maize.AboveGround.Wt)) +
+  geom_line(aes(x=Date, y=trial3), col = "red", linetype = "dashed")
+```
+
+## Trial 4 - Gen. Additive Model (GAM)
+
+```{r, echo = F, out.width="700px", out.height="500px", cache=T}
+data("testing")
+data("training")
+trial4 <- apsimo::online_emulate_maize(training, testing, pred_var = "Maize.AboveGround.Wt", pred_type = "online_total_full", method = "gam")
+ggplot(data = testing) +
+  geom_line(aes(x=Date, y=Maize.AboveGround.Wt)) +
+  geom_line(aes(x=Date, y=trial4), col = "red", linetype = "dashed")
+```
+
+## Trial 5 - Local GAM
+
+```{r, echo = F, out.width="700px", out.height="500px", cache=T}
+data("testing")
+data("training")
+trial5 <- apsimo::online_emulate_maize(training, testing, pred_var = "Maize.AboveGround.Wt", pred_type = "online_total_local", method = "gam")
+ggplot(data = testing) +
+  geom_line(aes(x=Date, y=Maize.AboveGround.Wt)) +
+  geom_line(aes(x=Date, y=trial5), col = "red", linetype = "dashed")
+```
+
+## Trial 6 - Random Forest
+
+```{r, echo = F, out.width="700px", out.height="500px", cache=T}
+data("testing")
+data("training")
+trial6 <- apsimo::online_emulate_maize(training, testing, pred_var = "Maize.AboveGround.Wt", pred_type = "no_update", method = "rf")
+ggplot(data = testing) +
+  geom_line(aes(x=Date, y=Maize.AboveGround.Wt)) +
+  geom_line(aes(x=Date, y=trial6), col = "red", linetype = "dashed")
+```
+
+## Results
+
+```{r echo = F}
+methods <- c("LM: total", "LM: daily change", 
+             "AR", "GAM: full", "GAM: local", "RF")
+rmse <- c(RMSE(trial1, testing$Maize.AboveGround.Wt), 
+          RMSE(trial2 %>% purrr::accumulate(`+`), testing$Maize.AboveGround.Wt), 
+          RMSE(trial3, testing$Maize.AboveGround.Wt), 
+          RMSE(trial4, testing$Maize.AboveGround.Wt), 
+          RMSE(trial5, testing$Maize.AboveGround.Wt), 
+          RMSE(trial6, testing$Maize.AboveGround.Wt))
+knitr::kable(cbind(methods, rmse=trunc(rmse)))
+```
+
+## Others: Transpiration (Local GAM)
+
+```{r echo = F, out.width="700px", out.height="500px", cache=T}
+data("testing")
+data("training")
+trial7 <- apsimo::online_emulate_maize(training, testing, pred_var = "Maize.Leaf.Transpiration", pred_type = "online_total_local", method = "gam")
+ggplot(data = testing[1:365,]) +
+  geom_line(aes(x=Date, y=Maize.Leaf.Transpiration)) +
+  geom_line(aes(x=Date, y=trial7[1:365]), col = "red", linetype = "dashed")
+```
+
+## Others: Runoff (RF)
+
+```{r echo = F, out.width="700px", out.height="500px", warning = F, cache=T}
+data("testing")
+data("training")
+trial7 <- apsimo::online_emulate_maize(training, testing, pred_var = "Soil.SoilWater.Runoff", pred_type = "no_update", method = "rf")
+ggplot(data = testing) +
+  geom_point(aes(x=Date, y=Soil.SoilWater.Runoff)) +
+  geom_point(aes(x=Date, y=trial7), col = "red")
+```
+
+## Conclusions
+
+Online prediction **can** be used to approximate daily APSIM output.
+
+- Local GAM models work well for accumulated totals
+- AR and local RF models also work pretty well
+- This wasn't an easy task, so full emulation might be really difficult to do accurately
+- This project helped me see why computer models are reasonable and useful compared to statistical models in some cases
+
+
+## Future Directions
+
+Complex techniques might be needed to fully emulate APSIM
+
+- Sowing / Harvest events in APSIM require careful consideration
+- Predict events and then predict outputs?
+- Will weather data be assumed known, imputed, or missing?
