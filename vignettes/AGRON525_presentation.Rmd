@@ -141,8 +141,9 @@ ggplot(data = report %>%
 data("testing")
 data("training")
 trial1 <- apsimo::online_emulate_maize(training, testing, pred_var = "Maize.AboveGround.Wt", pred_type = "online_total_full", method = "lm")
+`Maize AboveGround Wt` <- trial1
 ggplot(data = testing) +
-  geom_line(aes(x=Date, y=trial1), col = "red", linetype = "dashed") + geom_line(aes(x=Date, y=Maize.AboveGround.Wt))
+  geom_line(aes(x=Date, y=`Maize AboveGround Wt`), col = "red", linetype = "dashed") + geom_line(aes(x=Date, y=Maize.AboveGround.Wt))
 ```
 
 ## Linear Model Assumptions
