@@ -64,16 +64,16 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
   
   if(pred_type == "no_update"){
     if(method == "rf"){
-      model <- randomForest::randomForest(data = combo[seq(1,nrow(train)),],
+      model <- randomForest::randomForest(data = combo[seq(1,nrow(train)) %in% which(combo$growing == 1),],
                                           as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
     } else if(method == "nnet"){
-      model <- caret::train(data = combo[seq(1,nrow(train)),], method = "nnet", linout = 1,
+      model <- caret::train(data = combo[seq(1,nrow(train)) %in% which(combo$growing == 1),], method = "nnet", linout = 1,
                             as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
     } else if(method == "gam"){
-      model <- gam(data = combo[seq(1,nrow(train)),],
+      model <- gam(data = combo[seq(1,nrow(train)) %in% which(combo$growing == 1),],
                             as.formula(paste(pred_var," ~ ","Weather.Rain + Weather.Radn + Weather.MaxT + Weather.MeanT + Weather.MinT + Weather.VPD + s(yday) + year")))
     } else if(method == "lm"){
-      model <- lm(data = combo[seq(1,nrow(train)),],
+      model <- lm(data = combo[seq(1,nrow(train)) %in% which(combo$growing == 1),],
                    as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
     } else {
       model <- ar(combo$detrend[seq(1,nrow(train))])
@@ -111,7 +111,7 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
       
       training_indicies <- c()
       if(pred_type %in% c("online_total_full", "online_change_full")){
-        training_indicies <- seq(1,testing_index[i-1])
+        training_indicies <- seq(1,testing_index[i-1]) %in% which(combo$growing == 1)
       } else if(pred_type %in% c("online_total_local", "online_change_local")){
         training_indicies <- seq(testing_index[i-local_dist],testing_index[i-1])
       } else {
@@ -131,7 +131,7 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
         model <- lm(data = combo[training_indicies,],
                     as.formula(paste(pred_var," ~ ",paste(independent,collapse="+"))))
       } else if(method == "ar" & (pred_type != "no_update")){
-        model <- ar(combo$detrend[training_indicies])
+        model <- ar(combo$detrend[seq(1,testing_index[i-1])])
       }
       
       #If the previous APSIM output says the corn is ripe, then harvest
