@@ -5,3 +5,4 @@
 *.Rproj
 .DS_Store
 *.png
+vignettes/AGRON525_presentation_cache
