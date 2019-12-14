@@ -8,15 +8,6 @@
 #' @caret
 
 online_emulate_maize <- function(train, test, pred_var, pred_type, method, local_dist = 30){
-
-  #Load required libraries
-  #library(apsimx)
-  #library(ggplot2)
-  #library(lubridate)
-  #library(dplyr)
-  #library(mgcv)
-  #library(tidyr)
-  #library(caret)
   
   #List of required variables for online prediction
   required <- c("Weather.Rain", "Weather.Radn", "Weather.MaxT", "Weather.MeanT", 
