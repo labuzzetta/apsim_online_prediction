@@ -24,8 +24,8 @@
 #' @export
 #' @import apsimx
 #' @import ggplot2
-#' @import lubridate
 #' @import dplyr
+#' @importFrom lubridate yday
 #' @import mgcv
 #' @import tidyr
 #' @import caret
