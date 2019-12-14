@@ -6,14 +6,17 @@ simulation <- apsimx(file = "special_project_model.apsimx",
               src.dir = "./data-raw/archive", 
               silent = TRUE, value = 'report', cleanup = TRUE)
 
+#Lubridate format dates in the simulation data
 simulation <- simulation %>% mutate(year = year(Date), yday = yday(Date))
 
+#Edit the phenological stages to population every line
 simulation[which(simulation$Maize.Phenology.CurrentStageName == ""),]$Maize.Phenology.CurrentStageName <- NA;
 simulation[which(simulation$Maize.Phenology.CurrentStageName == "HarvestRipe"),]$Maize.Phenology.CurrentStageName <- "Ripe"
 simulation[which(simulation$Maize.Phenology.CurrentStageName == "Ripe")+1,]$Maize.Phenology.CurrentStageName <- "Harvest"
 simulation[which(simulation$yday == 1),]$Maize.Phenology.CurrentStageName <- "StartYear"; 
 simulation <- simulation %>% tidyr::fill("Maize.Phenology.CurrentStageName")
 
+#Add growing boolean variable for when the crop is growing
 simulation$growing <- dplyr::if_else(condition = simulation$Maize.Phenology.CurrentStageName != "StartYear" &
                                        simulation$Maize.Phenology.CurrentStageName != "Harvest", 
                                      1, 0)
