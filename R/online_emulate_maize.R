@@ -1,4 +1,12 @@
 #' @export
+#' @apsimx
+#' @ggplot2
+#' @lubridate
+#' @dplyr
+#' @mgcv
+#' @tidyr
+#' @caret
+
 online_emulate_maize <- function(train, test, pred_var, pred_type, method, local_dist = 30){
 
   #Load required libraries
