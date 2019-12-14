@@ -1,3 +1,26 @@
+#' Perform online prediction for Maize outputs from APSIMX
+#' 
+#' This function performs online prediction on next generation
+#' APSIM data. The 'train' data should be in the same format as
+#' the 'test' data and include the standard weather varibles. 
+#' Currently, this function works best for Maize model outputs,
+#' but may be applicable to other outputs. Variables with
+#' non-zero outputs during days of the year when the crop is 
+#' not growing will be predicted to be 0 and likely innaccurate.
+#' 
+#' \code{train} A data.frame of training data
+#' 
+#' \code{test} A data.frame of data to perform online prediction
+#' 
+#' \code{pred_var} Any Maize model APSIM output variable
+#' 
+#' \code{pred_type} One of "no_update", "online_total_local", 
+#' "online_total_full", "online_change_local", "online_change_full"
+#' 
+#' \code{method} One of "lm", "ar", "gam", "rf", "nnet"
+#' 
+#' \code{local_dist} Number of sliding window observations for local training
+#' 
 #' @export
 #' @import apsimx
 #' @import ggplot2
@@ -6,6 +29,12 @@
 #' @import mgcv
 #' @import tidyr
 #' @import caret
+#' 
+#' @examples
+#' data("training")
+#' data("testing")
+#' on <- online_emulate_maize(training, testing, pred_var = "Maize.AboveGround.Wt", pred_type = "online_total_local", method = "gam")
+#' plot(testing$Date, on, type = "l")
 
 online_emulate_maize <- function(train, test, pred_var, pred_type, method, local_dist = 30){
   
@@ -50,8 +79,10 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
   
   model <- NULL
   
+  #List of covariates
   independent <- c("Weather.Rain","Weather.Radn","Weather.MaxT","Weather.MeanT","Weather.MinT","Weather.VPD","yday","year")
   
+  #Instantiate ar model components
   if(method == "ar"){
     detrend.fit <- gam(data = combo[seq(1,nrow(train)),],
                        as.formula(paste(pred_var," ~ ","Weather.Rain + Weather.Radn + Weather.MaxT + Weather.MeanT + Weather.MinT + Weather.VPD + s(yday) + year")))
@@ -61,6 +92,7 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
     combo$detrend <- combo[[pred_var]] - combo$Trend
   }
   
+  #Train models which do not update throughout prediction phase
   if(pred_type == "no_update"){
     if(method == "rf"){
       model <- randomForest::randomForest(data = combo[seq(1,nrow(train)) %in% which(combo$growing == 1),],
@@ -79,7 +111,7 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
     }
   }
   
-  #Model residuals via online prediction method dependent on 
+  #Model via online prediction method dependent on 
   #pred_type and method selectionse
   forecasts <- numeric(length(test))
   sowed = FALSE
@@ -146,7 +178,7 @@ online_emulate_maize <- function(train, test, pred_var, pred_type, method, local
           forecast = 0
         }
       } else {
-        #If the crop was not harvested, return the RF model online prediction
+        #If the crop was not harvested, return model prediction
         if(method != "ar"){
           forecast <- as.numeric(predict(model, test[i,]))
         } else {
