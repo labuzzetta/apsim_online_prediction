@@ -1,4 +1,5 @@
 library(apsimx)
+library(dplyr)
 
 #Use the apsimx package to run apsim next generation
 simulation <- apsimx(file = "special_project_model.apsimx", 
