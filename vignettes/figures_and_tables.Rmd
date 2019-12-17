@@ -1,0 +1,149 @@
+---
+title: "Figures and Tables"
+author: "Charles Labuzzetta"
+date: "12/9/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(apsimx)
+library(ggplot2)
+library(lubridate)
+library(dplyr)
+library(mgcv)
+library(tidyr)
+library(caret)
+library(ggplot2)
+library(apsimo)
+```
+
+```{r}
+#Load datasets from package
+data("training")
+data("testing")
+data("secret")
+
+trial1 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.AboveGround.Wt", pred_type = "online_total_full", method = "lm")
+`Maize AboveGround Wt` <- trial1
+
+trial2 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.AboveGround.Wt", pred_type = "online_change_full", method = "lm")
+
+trial3 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.AboveGround.Wt", pred_type = "online_total_full", method = "ar")
+
+trial4 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.AboveGround.Wt", pred_type = "online_total_full", method = "gam")
+
+trial5 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.AboveGround.Wt", pred_type = "online_total_local", method = "gam")
+
+trial6 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.AboveGround.Wt", pred_type = "no_update", method = "rf")
+
+ggplot(data = secret %>% filter(year == 2012)) +
+  geom_line(aes(x=Date, y=Maize.AboveGround.Wt, col = "Observed"), size = 1.5) +
+  geom_line(aes(x=Date, y=trial1[1:366], col = "LM: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial2[1:366] %>% purrr::accumulate(`+`), col = "LM: change"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial3[1:366], col = "AR: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial4[1:366], col = "GAM: full"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial5[1:366], col = "GAM: local"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial6[1:366], col = "RF: no update"), linetype = "dashed") +
+  scale_colour_manual(name="Method",
+                    values=c(Observed="black", `LM: total`=2,
+                             `LM: change`=3, `AR: total`=4,
+                             `GAM: full`=5, `GAM: local`=6, `RF: no update`=7))
+
+ggplot(data = secret %>% filter(year == 2013)) +
+  geom_line(aes(x=Date, y=Maize.AboveGround.Wt, col = "Observed"), size = 1.5) +
+  geom_line(aes(x=Date, y=trial1[367:731], col = "LM: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial2[367:731] %>% purrr::accumulate(`+`), col = "LM: change"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial3[367:731], col = "AR: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial4[367:731], col = "GAM: full"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial5[367:731], col = "GAM: local"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial6[367:731], col = "RF: no update"), linetype = "dashed") +
+  scale_colour_manual(name="Method",
+                    values=c(Observed="black", `LM: total`=2,
+                             `LM: change`=3, `AR: total`=4,
+                             `GAM: full`=5, `GAM: local`=6, `RF: no update`=7))
+
+ggplot(data = secret %>% filter(year == 2014)) +
+  geom_line(aes(x=Date, y=Maize.AboveGround.Wt, col = "Observed"), size = 1.5) +
+  geom_line(aes(x=Date, y=trial1[732:1096], col = "LM: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial2[732:1096] %>% purrr::accumulate(`+`), col = "LM: change"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial3[732:1096], col = "AR: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial4[732:1096], col = "GAM: full"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial5[732:1096], col = "GAM: local"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial6[732:1096], col = "RF: no update"), linetype = "dashed") +
+  scale_colour_manual(name="Method",
+                    values=c(Observed="black", `LM: total`=2,
+                             `LM: change`=3, `AR: total`=4,
+                             `GAM: full`=5, `GAM: local`=6, `RF: no update`=7))
+  
+methods <- c("LM: total", "LM: change", 
+             "AR: total", "GAM: full", "GAM: local", "RF: no update")
+rmse <- c(RMSE(trial1, secret$Maize.AboveGround.Wt), 
+          RMSE(trial2 %>% purrr::accumulate(`+`), secret$Maize.AboveGround.Wt), 
+          RMSE(trial3, secret$Maize.AboveGround.Wt), 
+          RMSE(trial4, secret$Maize.AboveGround.Wt), 
+          RMSE(trial5, secret$Maize.AboveGround.Wt), 
+          RMSE(trial6, secret$Maize.AboveGround.Wt))
+```
+
+```{r}
+#Load datasets from package
+data("training")
+data("testing")
+data("secret")
+
+trial1 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.Leaf.Transpiration", pred_type = "online_total_full", method = "lm")
+`Maize AboveGround Wt` <- trial1
+
+trial3 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.Leaf.Transpiration", pred_type = "online_total_full", method = "ar")
+
+trial4 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.Leaf.Transpiration", pred_type = "online_total_full", method = "gam")
+
+trial5 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.Leaf.Transpiration", pred_type = "online_total_local", method = "gam")
+
+trial6 <- apsimo::online_emulate_maize(training, secret, pred_var = "Maize.Leaf.Transpiration", pred_type = "no_update", method = "rf")
+
+ggplot(data = secret %>% filter(year == 2012)) +
+  geom_line(aes(x=Date, y=Maize.Leaf.Transpiration, col = "Observed"), size = 1.5) +
+  geom_line(aes(x=Date, y=trial1[1:366], col = "LM: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial3[1:366], col = "AR: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial4[1:366], col = "GAM: full"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial5[1:366], col = "GAM: local"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial6[1:366], col = "RF: no update"), linetype = "dashed") +
+  scale_colour_manual(name="Method",
+                    values=c(Observed="black", `LM: total`=2,
+                             `AR: total`=4, `GAM: full`=5, 
+                             `GAM: local`=6, `RF: no update`=7))
+
+ggplot(data = secret %>% filter(year == 2013)) +
+  geom_line(aes(x=Date, y=Maize.Leaf.Transpiration, col = "Observed"), size = 1.5) +
+  geom_line(aes(x=Date, y=trial1[367:731], col = "LM: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial3[367:731], col = "AR: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial4[367:731], col = "GAM: full"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial5[367:731], col = "GAM: local"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial6[367:731], col = "RF: no update"), linetype = "dashed") +
+  scale_colour_manual(name="Method",
+                    values=c(Observed="black", `LM: total`=2,
+                             `AR: total`=4, `GAM: full`=5, 
+                             `GAM: local`=6, `RF: no update`=7))
+
+ggplot(data = secret %>% filter(year == 2014)) +
+  geom_line(aes(x=Date, y=Maize.Leaf.Transpiration, col = "Observed"), size = 1.5) +
+  geom_line(aes(x=Date, y=trial1[732:1096], col = "LM: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial3[732:1096], col = "AR: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial4[732:1096], col = "GAM: full"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial5[732:1096], col = "GAM: local"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial6[732:1096], col = "RF: no update"), linetype = "dashed") +
+  scale_colour_manual(name="Method",
+                    values=c(Observed="black", `LM: total`=2,
+                             `AR: total`=4, `GAM: full`=5,
+                             `GAM: local`=6, `RF: no update`=7))
+  
+methods <- c("LM: total",
+             "AR: total", "GAM: full", "GAM: local", "RF: no update")
+rmse <- c(RMSE(trial1, secret$Maize.Leaf.Transpiration), 
+          RMSE(trial3, secret$Maize.Leaf.Transpiration), 
+          RMSE(trial4, secret$Maize.Leaf.Transpiration), 
+          RMSE(trial5, secret$Maize.Leaf.Transpiration), 
+          RMSE(trial6, secret$Maize.Leaf.Transpiration))
+```
