@@ -147,3 +147,65 @@ rmse <- c(RMSE(trial1, secret$Maize.Leaf.Transpiration),
           RMSE(trial5, secret$Maize.Leaf.Transpiration), 
           RMSE(trial6, secret$Maize.Leaf.Transpiration))
 ```
+
+```{r}
+#Load datasets from package
+data("training")
+data("testing")
+data("secret")
+
+trial1 <- apsimo::online_emulate_maize(training, secret, pred_var = "SoilWater.LeachNO3", pred_type = "online_total_full", method = "lm")
+`Maize AboveGround Wt` <- trial1
+
+trial3 <- apsimo::online_emulate_maize(training, secret, pred_var = "SoilWater.LeachNO3", pred_type = "online_total_full", method = "ar")
+
+trial4 <- apsimo::online_emulate_maize(training, secret, pred_var = "SoilWater.LeachNO3", pred_type = "online_total_full", method = "gam")
+
+trial5 <- apsimo::online_emulate_maize(training, secret, pred_var = "SoilWater.LeachNO3", pred_type = "online_total_local", method = "gam")
+
+trial6 <- apsimo::online_emulate_maize(training, secret, pred_var = "SoilWater.LeachNO3", pred_type = "no_update", method = "rf")
+
+ggplot(data = secret %>% filter(year == 2012)) +
+  geom_line(aes(x=Date, y=SoilWater.LeachNO3, col = "Observed"), size = 1.5) +
+  geom_line(aes(x=Date, y=trial1[1:366], col = "LM: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial3[1:366], col = "AR: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial4[1:366], col = "GAM: full"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial5[1:366], col = "GAM: local"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial6[1:366], col = "RF: no update"), linetype = "dashed") +
+  scale_colour_manual(name="Method",
+                    values=c(Observed="black", `LM: total`=2,
+                             `AR: total`=4, `GAM: full`=5, 
+                             `GAM: local`=6, `RF: no update`=7))
+
+ggplot(data = secret %>% filter(year == 2013)) +
+  geom_line(aes(x=Date, y=SoilWater.LeachNO3, col = "Observed"), size = 1.5) +
+  geom_line(aes(x=Date, y=trial1[367:731], col = "LM: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial3[367:731], col = "AR: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial4[367:731], col = "GAM: full"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial5[367:731], col = "GAM: local"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial6[367:731], col = "RF: no update"), linetype = "dashed") +
+  scale_colour_manual(name="Method",
+                    values=c(Observed="black", `LM: total`=2,
+                             `AR: total`=4, `GAM: full`=5, 
+                             `GAM: local`=6, `RF: no update`=7))
+
+ggplot(data = secret %>% filter(year == 2014)) +
+  geom_line(aes(x=Date, y=SoilWater.LeachNO3, col = "Observed"), size = 1.5) +
+  geom_line(aes(x=Date, y=trial1[732:1096], col = "LM: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial3[732:1096], col = "AR: total"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial4[732:1096], col = "GAM: full"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial5[732:1096], col = "GAM: local"), linetype = "dashed") +
+  geom_line(aes(x=Date, y=trial6[732:1096], col = "RF: no update"), linetype = "dashed") +
+  scale_colour_manual(name="Method",
+                    values=c(Observed="black", `LM: total`=2,
+                             `AR: total`=4, `GAM: full`=5,
+                             `GAM: local`=6, `RF: no update`=7))
+  
+methods <- c("LM: total",
+             "AR: total", "GAM: full", "GAM: local", "RF: no update")
+rmse <- c(RMSE(trial1, secret$SoilWater.LeachNO3), 
+          RMSE(trial3, secret$SoilWater.LeachNO3), 
+          RMSE(trial4, secret$SoilWater.LeachNO3), 
+          RMSE(trial5, secret$SoilWater.LeachNO3), 
+          RMSE(trial6, secret$SoilWater.LeachNO3))
+```
