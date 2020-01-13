@@ -11,5 +11,5 @@ This package may be installed via:
 
 ```{r}
 library(devtools)
-install_github("clabuzze/apsim_online_prediction")
+install_github("labuzzetta/apsim_online_prediction")
 ```
